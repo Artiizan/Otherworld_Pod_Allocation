@@ -2,7 +2,9 @@
 
 Pod Allocation is a typescript project for determining the best assignment of bookings made at specific time slots for a predetermined period (in minutes) and a number of people. Written as a challenge presented by [Otherworld](https://other.world).
 
-## Package Installation
+## Installation & Usage
+
+### Package Installation
 
 Use the node package manager [npm](https://docs.npmjs.com/cli/v7/configuring-npm/install) to install requirements to build the project.
 
@@ -10,7 +12,11 @@ Use the node package manager [npm](https://docs.npmjs.com/cli/v7/configuring-npm
 npm install
 ```
 
-## Usage
+### Requirements
+- typescript `v4.3.4^`
+- node.js `v12.19.0^`
+
+### Usage
 
 To run the project with the dummy data:
 
@@ -18,7 +24,7 @@ To run the project with the dummy data:
 npm start
 ```
 
-## Solution Assumptions
+## Data Structures
 - Input data will be provided from multiple bookings sources in a unified format:
 ```javascript
 type Booking = {
@@ -43,6 +49,16 @@ type Allocation = {
     - There is sufficient "swap over time" inbetween sessions
     - Overbooking scenarios are handled in some way
         - Maxmimise pod occupancy and wait times for overbooked customers
+
+## Assumptions and Theories
+### Self Made Assumptions
+- Bookings of larger groups and longer times are more profitable and as such should be prioritised in all scenarios in order to maximise occupancy during overbooking. <br>
+    - Simple solution is to order the input array of bookings by the group size.<br>
+    However this might not be optimal as a combination of 6+5 people bookings might be better than a 10 person booking. Unless there is a group of two, alot of possible layers to the logic.
+- Pods array will be written to another storage mechanism in order to allow in store staff to pull up the allocations and know which pods to send the clients to.
+
+### Thoughts 
+- Is it possible to start an overbooked booking a few minutes later is better than not allocating a slot to those clients. Provided it does not cause a knock on effect.
 
 ## Contributions
 
