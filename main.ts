@@ -44,10 +44,10 @@ const allocateBookings = (options: AllocateBookingsOptions): Pod[] => {
   var totalBookings = 0;
   var allocatedBookings = 0;
 
-  // Order bookings by number of clients to maximise utilization
+  // Order bookings by start date and then the number of clients to maximise utilization
   // TODO: Figure out how to handle the 5+6 clients is better than 10 clients scenario
   var bookings = options.bookings.sort((x, y) =>
-    x.vr.count < y.vr.count ? 1 : -1
+    x.startDate > y.startDate ? 1 : -1 || x.vr.count < y.vr.count ? 1 : -1
   );
 
   // Iterate through bookings to make allocations
@@ -78,7 +78,10 @@ const allocateBookings = (options: AllocateBookingsOptions): Pod[] => {
         allocatedBookings++;
       }
     } else {
-      console.log("Booking cannot be allocated with current rules: " + booking);
+      console.warn(
+        "Booking cannot be allocated with current rules: " +
+          JSON.stringify(booking)
+      );
     }
   });
 
@@ -125,21 +128,24 @@ const getAvailablePods = (
           allocation.startDate <= startDate &&
           moment(allocation.endDate)
             .add(changeOverTime as moment.DurationInputArg1, "minutes") // Adds changeover time
-            .toDate() >= startDate
+            .toDate() > startDate
       ).length == 0
   );
 
-  // Checks that all sessions in the pod are done and swapped over before this one starts
+  // Checks that the session will complete and swap over before an existing booking starts
   podsWithAvailability = podsWithAvailability.filter(
     (pod) =>
       pod.allocations.filter(
         (allocation) =>
-          allocation.endDate >=
-          moment(startDate)
-            .add(duration as moment.DurationInputArg1, "minutes") // Adds Session length
+          moment(allocation.endDate)
             .add(changeOverTime as moment.DurationInputArg1, "minutes") // Adds changeover time
-            .toDate()
-      ).length == 0
+            .toDate()! <= startDate ||
+          allocation.startDate! >=
+            moment(startDate)
+              .add(duration as moment.DurationInputArg1, "minutes") // Adds Session length
+              .add(changeOverTime as moment.DurationInputArg1, "minutes") // Adds changeover time
+              .toDate()
+      ).length == pod.allocations.length
   );
 
   if (podsWithAvailability.length > 0) {
@@ -149,6 +155,7 @@ const getAvailablePods = (
   }
 
   // Order pods by number to allocate larger groups next to each other
+  // TODO: Consider spreading out the wear on pods slightly more to avoid over utilisation of the first few pods
   availablePods.sort((x, y) => (x.pod > y.pod ? 1 : -1));
   return availablePods;
 };
@@ -158,56 +165,325 @@ const getAvailablePods = (
 //#region Dummy Data and Test Method
 
 /* DUMMY CODE */
-const now = moment();
+
 // Dummy list of Bookings for testing methods
-const bookings: Booking[] = [
+// const now = moment();
+// const bookings: Booking[] = [
+//   {
+//     _id: "a",
+//     startDate: now.toDate(),
+//     vr: {
+//       duration: 30,
+//       count: 1,
+//     },
+//   },
+//   {
+//     _id: "b",
+//     startDate: now.add(35, "minutes").toDate(),
+//     vr: {
+//       duration: 30,
+//       count: 1,
+//     },
+//   },
+//   {
+//     _id: "c",
+//     startDate: now.add(20, "minutes").toDate(),
+//     vr: {
+//       duration: 20,
+//       count: 4,
+//     },
+//   },
+//   {
+//     _id: "d",
+//     startDate: now.add(10, "minutes").toDate(),
+//     vr: {
+//       duration: 35,
+//       count: 8,
+//     },
+//   },
+//   {
+//     _id: "e",
+//     startDate: now.add(65, "minutes").toDate(),
+//     vr: {
+//       duration: 26,
+//       count: 3,
+//     },
+//   },
+//   {
+//     _id: "f",
+//     startDate: now.add(65, "minutes").toDate(),
+//     vr: {
+//       duration: 60,
+//       count: 5,
+//     },
+//   },
+// ];
+
+// Production Bookings Test Data
+export const bookings = [
   {
-    _id: "a",
-    startDate: now.toDate(),
+    _id: "60c4cdd311a5940031886a20",
     vr: {
-      duration: 30,
-      count: 1,
+      count: 2,
+      duration: 40,
     },
+    startDate: new Date("2021-07-01T15:00:00.000+0000"),
   },
   {
-    _id: "b",
-    startDate: now.add(35, "minutes").toDate(),
+    _id: "60ce50ad94db3600323ba0bd",
     vr: {
-      duration: 30,
-      count: 1,
+      count: 2,
+      duration: 40,
     },
+    startDate: new Date("2021-07-01T15:00:00.000+0000"),
   },
   {
-    _id: "c",
-    startDate: now.add(20, "minutes").toDate(),
+    _id: "60d398dc6fc6060029c2d035",
     vr: {
-      duration: 20,
-      count: 4,
-    },
-  },
-  {
-    _id: "d",
-    startDate: now.add(10, "minutes").toDate(),
-    vr: {
-      duration: 35,
-      count: 8,
-    },
-  },
-  {
-    _id: "e",
-    startDate: now.add(65, "minutes").toDate(),
-    vr: {
-      duration: 26,
-      count: 3,
-    },
-  },
-  {
-    _id: "f",
-    startDate: now.add(65, "minutes").toDate(),
-    vr: {
-      duration: 60,
       count: 5,
+      duration: 55,
     },
+    startDate: new Date("2021-07-01T15:00:00.000+0000"),
+  },
+  {
+    _id: "60d89796e654e4003c993e8b",
+    vr: {
+      count: 2,
+      duration: 40,
+    },
+    startDate: new Date("2021-07-01T15:00:00.000+0000"),
+  },
+  {
+    _id: "60c11ed311a5940031880345",
+    vr: {
+      count: 2,
+      duration: 40,
+    },
+    startDate: new Date("2021-07-01T15:15:00.000+0000"),
+  },
+  {
+    _id: "60d48672417ef500364a5a7f",
+    vr: {
+      count: 6,
+      duration: 70,
+    },
+    startDate: new Date("2021-07-01T15:45:00.000+0000"),
+  },
+  {
+    _id: "60c658d794db36003238f774",
+    vr: {
+      count: 2,
+      duration: 55,
+    },
+    startDate: new Date("2021-07-01T16:00:00.000+0000"),
+  },
+  {
+    _id: "60d0e93f94db3600323c4b1e",
+    vr: {
+      count: 3,
+      duration: 55,
+    },
+    startDate: new Date("2021-07-01T16:30:00.000+0000"),
+  },
+  {
+    _id: "60d2685994db3600323c9cf6",
+    vr: {
+      count: 2,
+      duration: 55,
+    },
+    startDate: new Date("2021-07-01T16:30:00.000+0000"),
+  },
+  {
+    _id: "60aa8bbd94db36003230338c",
+    vr: {
+      count: 4,
+      duration: 70,
+    },
+    startDate: new Date("2021-07-01T17:00:00.000+0000"),
+  },
+  {
+    _id: "60dc5fb289d43c002ef98d35",
+    vr: {
+      count: 2,
+      duration: 55,
+    },
+    startDate: new Date("2021-07-01T17:00:00.000+0000"),
+  },
+  {
+    _id: "60dcb7a289d43c002ef9abec",
+    vr: {
+      count: 2,
+      duration: 55,
+    },
+    startDate: new Date("2021-07-01T17:00:00.000+0000"),
+  },
+  {
+    _id: "60940e9f0058740027a56fd7",
+    vr: {
+      count: 5,
+      duration: 70,
+    },
+    startDate: new Date("2021-07-01T17:30:00.000+0000"),
+  },
+  {
+    _id: "60a974d294db3600322fd596",
+    vr: {
+      count: 2,
+      duration: 70,
+    },
+    startDate: new Date("2021-07-01T18:00:00.000+0000"),
+  },
+  {
+    _id: "60cda25f94db3600323b4908",
+    vr: {
+      count: 2,
+      duration: 40,
+    },
+    startDate: new Date("2021-07-01T18:00:00.000+0000"),
+  },
+  {
+    _id: "60abe93c94db36003230e53d",
+    vr: {
+      count: 2,
+      duration: 55,
+    },
+    startDate: new Date("2021-07-01T18:15:00.000+0000"),
+  },
+  {
+    _id: "60d0fcf011a59400318c9fb9",
+    vr: {
+      count: 2,
+      duration: 55,
+    },
+    startDate: new Date("2021-07-01T18:30:00.000+0000"),
+  },
+  {
+    _id: "60d4af5885cb01003c85c54a",
+    vr: {
+      count: 4,
+      duration: 70,
+    },
+    startDate: new Date("2021-07-01T18:45:00.000+0000"),
+  },
+  {
+    _id: "60d096ec11a59400318c2994",
+    vr: {
+      count: 2,
+      duration: 40,
+    },
+    startDate: new Date("2021-07-01T19:00:00.000+0000"),
+  },
+  {
+    _id: "60d87407d62c0100370557cd",
+    vr: {
+      count: 2,
+      duration: 55,
+    },
+    startDate: new Date("2021-07-01T19:00:00.000+0000"),
+  },
+  {
+    _id: "60d89dcce654e4003c993f15",
+    vr: {
+      count: 2,
+      duration: 40,
+    },
+    startDate: new Date("2021-07-01T19:15:00.000+0000"),
+  },
+  {
+    _id: "60d9964c26e10500280fe4a2",
+    vr: {
+      count: 2,
+      duration: 40,
+    },
+    startDate: new Date("2021-07-01T19:15:00.000+0000"),
+  },
+  {
+    _id: "60d27b1b11a59400318d3467",
+    vr: {
+      count: 11,
+      duration: 55,
+    },
+    startDate: new Date("2021-07-01T20:00:00.000+0000"),
+  },
+  {
+    _id: "60d27b3511a59400318d3498",
+    vr: {
+      count: 11,
+      duration: 55,
+    },
+    startDate: new Date("2021-07-01T20:00:00.000+0000"),
+  },
+  {
+    _id: "60d642a1e654e4003c98f540",
+    vr: {
+      count: 3,
+      duration: 55,
+    },
+    startDate: new Date("2021-07-01T20:00:00.000+0000"),
+  },
+  {
+    _id: "60d49d5e0ed2600030211185",
+    vr: {
+      count: 2,
+      duration: 55,
+    },
+    startDate: new Date("2021-07-01T21:00:00.000+0000"),
+  },
+  {
+    _id: "60d7dcfcd62c010037054a22",
+    vr: {
+      count: 2,
+      duration: 55,
+    },
+    startDate: new Date("2021-07-01T21:00:00.000+0000"),
+  },
+  {
+    _id: "60d8d9bbd62c01003705751a",
+    vr: {
+      count: 4,
+      duration: 55,
+    },
+    startDate: new Date("2021-07-01T21:00:00.000+0000"),
+  },
+  {
+    _id: "60da3e0f89d43c002ef92a73",
+    vr: {
+      count: 2,
+      duration: 55,
+    },
+    startDate: new Date("2021-07-01T21:00:00.000+0000"),
+  },
+  {
+    _id: "60db210389d43c002ef94056",
+    vr: {
+      count: 2,
+      duration: 40,
+    },
+    startDate: new Date("2021-07-01T21:00:00.000+0000"),
+  },
+  {
+    _id: "60dc342489d43c002ef97af6",
+    vr: {
+      count: 2,
+      duration: 40,
+    },
+    startDate: new Date("2021-07-01T21:00:00.000+0000"),
+  },
+  {
+    _id: "60dcb6e689d43c002ef9ab13",
+    vr: {
+      count: 2,
+      duration: 55,
+    },
+    startDate: new Date("2021-07-01T21:00:00.000+0000"),
+  },
+  {
+    _id: "60dd7a1e89d43c002ef9b8db",
+    vr: {
+      count: 2,
+      duration: 40,
+    },
+    startDate: new Date("2021-07-01T21:00:00.000+0000"),
   },
 ];
 
