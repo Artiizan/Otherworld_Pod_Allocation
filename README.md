@@ -36,8 +36,13 @@ type Booking = {
     }
 }
 ```
-- Output result should be an array of allocated bookings for the provided input data, in the following format:
+- Output result should be an array of pod objects for the provided input data, in the following format:
 ```javascript
+type Pod = {
+  pod: number;
+  allocations: Allocation[];
+};
+
 type Allocation = {
     startDate: Date,
     endDate: Date,

@@ -38,10 +38,11 @@ type Pod = {
  * @param {Number} options.changeOverTime - How many minutes to leave between sessions.
  * @param {Booking[]} options.bookings - An array of booking objects.
  */
-const allocateBookings = (options: AllocateBookingsOptions): Allocation[] => {
-  // Constant Variable Declaration
+const allocateBookings = (options: AllocateBookingsOptions): Pod[] => {
+  // Variable Declaration
   const pods = initPods(options.podCount);
-  const allocations: Allocation[] = [];
+  var totalBookings = 0;
+  var allocatedBookings = 0;
 
   // Order bookings by number of clients to maximise utilization
   // TODO: Figure out how to handle the 5+6 clients is better than 10 clients scenario
@@ -51,6 +52,7 @@ const allocateBookings = (options: AllocateBookingsOptions): Allocation[] => {
 
   // Iterate through bookings to make allocations
   bookings.forEach((booking) => {
+    totalBookings += booking.vr.count;
     const availablePods = getAvailablePods(
       pods,
       booking.startDate,
@@ -68,16 +70,21 @@ const allocateBookings = (options: AllocateBookingsOptions): Allocation[] => {
           bookingId: booking._id,
         };
 
-        // Adding Allocations to allocation list and Pods
-        allocations.push(allocation);
+        // Adding Allocations to Pods
         var assignedPod = availablePods[0];
         availablePods.shift(); // Remove the assigned pod
         pods[assignedPod.pod - 1].allocations.push(allocation); // Add allocation to the Pod
+
+        allocatedBookings++;
       }
+    } else {
+      console.log("Booking cannot be allocated with current rules: " + booking);
     }
   });
 
-  return allocations;
+  console.log("Total bookings: " + totalBookings);
+  console.log("Total bookings allocated: " + allocatedBookings);
+  return pods;
 };
 
 //#region Helper Methods
@@ -111,26 +118,28 @@ const getAvailablePods = (
   let availablePods: Pod[] = [];
 
   // Checks that the startDate is not during any of the current bookings for that pod
-  var podsWithAvailability = pods.filter((pod) =>
-    pod.allocations.filter(
-      (allocation) =>
-        allocation.startDate <= startDate &&
-        moment(allocation.endDate)
-          .add(changeOverTime as moment.DurationInputArg1, "minutes") // Adds changeover time
-          .toDate() >= startDate
-    ).length == 0
+  var podsWithAvailability = pods.filter(
+    (pod) =>
+      pod.allocations.filter(
+        (allocation) =>
+          allocation.startDate <= startDate &&
+          moment(allocation.endDate)
+            .add(changeOverTime as moment.DurationInputArg1, "minutes") // Adds changeover time
+            .toDate() >= startDate
+      ).length == 0
   );
 
   // Checks that all sessions in the pod are done and swapped over before this one starts
-  podsWithAvailability = podsWithAvailability.filter((pod) =>
-    pod.allocations.filter(
-      (allocation) =>
-        allocation.endDate >=
-        moment(startDate)
-          .add(duration as moment.DurationInputArg1, "minutes") // Adds Session length
-          .add(changeOverTime as moment.DurationInputArg1, "minutes") // Adds changeover time
-          .toDate()
-    ).length == 0
+  podsWithAvailability = podsWithAvailability.filter(
+    (pod) =>
+      pod.allocations.filter(
+        (allocation) =>
+          allocation.endDate >=
+          moment(startDate)
+            .add(duration as moment.DurationInputArg1, "minutes") // Adds Session length
+            .add(changeOverTime as moment.DurationInputArg1, "minutes") // Adds changeover time
+            .toDate()
+      ).length == 0
   );
 
   if (podsWithAvailability.length > 0) {
@@ -202,13 +211,13 @@ const bookings: Booking[] = [
   },
 ];
 
-const allocations = allocateBookings({
+const pods = allocateBookings({
   podCount: 14,
   changeOverTime: 5,
   bookings,
 });
 
-console.log(allocations);
+console.log(pods);
 
 /* we'll run some real data (including overbooking scenarios!)
 through the function and test the allocations output */
