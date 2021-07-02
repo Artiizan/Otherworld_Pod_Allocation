@@ -65,6 +65,12 @@ type Allocation = {
 ### Thoughts 
 - Is it possible to start an overbooked booking a few minutes later is better than not allocating a slot to those clients. Provided it does not cause a knock on effect.
 
+## Future Enhancements
+1. Another way to handle bookings that cannot be accomodated, perhaps suggestions of other available times.
+1. Ordering of input data in a way that sorts based on group size or session length (depending on business logic for porfitability)
+1. Spreading out allocation on pods to ensure there is not over utilisation of one and emptiness in another (longevity of components)
+1. Attempt to delay larger overbooked bookings by a few minutes in order to facilitate them rather than turn them away (requires a far more in depth model and decision tree to avoid a knockon effect (possible use case for a Machine Learning model for each days bookings, compared to a perfect scenario))
+
 ## Contributions
 
 - **Scaffold**: Written and provided by [Chris Adams](mailto:chris@thedreamcorporation.com) at Otherworld
