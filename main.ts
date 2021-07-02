@@ -44,10 +44,10 @@ const allocateBookings = (options: AllocateBookingsOptions): Pod[] => {
   var totalBookings = 0;
   var allocatedBookings = 0;
 
-  // Order bookings by start date and then the number of clients to maximise utilization
+  // Order bookings by start date, then the number of clients and then the session duration to maximise utilization
   // TODO: Figure out how to handle the 5+6 clients is better than 10 clients scenario
   var bookings = options.bookings.sort((x, y) =>
-    x.startDate > y.startDate ? 1 : -1 || x.vr.count < y.vr.count ? 1 : -1
+  x.startDate > y.startDate ? 1 : -1 && x.vr.count < y.vr.count ? 1 : -1 && x.vr.duration < y.vr.duration ? 1 : -1
   );
 
   // Iterate through bookings to make allocations
